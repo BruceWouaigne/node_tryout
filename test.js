@@ -8,28 +8,42 @@ net.createServer(function (sock) {
     clients.push(sock);
 
     sock.on('data', function (data) {
+
         var regName = new RegExp("^/myname=[a-zA-Z0-9_]+");
+
+        /**
+         * Change my name
+         */
         if (null != data.toString().match(regName)) {
-            sock.oldName = sock.name;
-            sock.name = data.toString().replace('/myname=', '');
-            sock.name = sock.name.replace('\n', '');
+            changeName(data, sock);
+        /**
+         * Talk
+         */
         } else {
-            talk(data, sock);
+            broadcast(sock.name + '> ' + data, sock);
         }
+
     });
 
-    function talk(message, socket)
+    function changeName(data, socket)
+    {
+        var newName = data[0].replace('/myname=', '');
+        notify(socket.name  + ' is now ' + newName, socket);
+        socket.name = newName;
+    }
+
+    function notify(message, socket)
+    {
+        broadcast('[' + message + ']', socket);
+    }
+
+    function broadcast(message, socket)
     {
         clients.forEach(function (client) {
             if (socket !== client) {
-                client.write(socket.name + '> ' + message);
+                client.write(message);
             }
         });
-        log(socket.name + ' said: ' + message);
-    }
-
-    function log(message)
-    {
         console.log(message);
     }
 
